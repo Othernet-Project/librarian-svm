@@ -1,0 +1,2 @@
+recursive-include librarian_svm *
+recursive-exclude tests *

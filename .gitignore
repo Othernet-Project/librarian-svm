@@ -1,0 +1,11 @@
+*.py[oc]
+*.sw[op]
+/.tox
+/.cache
+/*.egg-info
+/dist
+/build
+/docs/build
+/.ropeproject
+/.sass-cache
+/.*_pid
