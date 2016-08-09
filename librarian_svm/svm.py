@@ -6,6 +6,7 @@ This software is free software licensed under the terms of GPLv3. See COPYING
 file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 """
 
+import functools
 import glob
 import logging
 import os
@@ -173,24 +174,6 @@ class Overlay(object):
         stashdir = exts.config['svm.stashdir']
         return (cls(path) for path in glob.iglob(stashdir))
 
-    def _prepare_dest(self):
-        """
-        Prepare destination for installation, remounting it in read-write mode,
-        and returning the original mount mode that it was found in.
-        """
-        try:
-            mode = get_mount_mode(self.BOOT)
-        except IndeterminableMountMode:
-            logging.error("Unable to determine mount mode of `/boot`")
-            raise InstallError("Unable to determine mount mode of `/boot`")
-        else:
-            # remount /boot in read-write mode if it's not already in it
-            if mode != READ_WRITE and not remount(self.BOOT, READ_WRITE):
-                logging.error("Cannot remount `/boot` in read-write mode")
-                raise InstallError("Cannot remount `/boot` in read-write mode")
-            # returning original mount mode
-            return mode
-
     def find_installed_relative(self):
         """
         Find and return an overlay that is equally named as this instance,
@@ -201,19 +184,43 @@ class Overlay(object):
             if overlay.name == self.name:
                 return overlay
 
-    def install(self):
+    def install_wrapper(fn):
         """
-        Install this overlay into :py:attr:`~Overlay.BOOT`.
+        Prepare destination for installation, remounting it in read-write mode,
+        and returning it to the original mount mode that it was found in after
+        installation is done.
+        """
+        @functools.wraps(fn)
+        def wrapper(self, *args, **kwargs):
+            try:
+                mode = get_mount_mode(self.BOOT)
+            except IndeterminableMountMode:
+                logging.error("Unable to determine mount mode of `/boot`")
+                raise InstallError("Unable to determine mount mode of `/boot`")
+            # remount /boot in read-write mode if it's not already in it
+            if mode != READ_WRITE and not remount(self.BOOT, READ_WRITE):
+                logging.error("Cannot remount `/boot` in read-write mode")
+                raise InstallError("Cannot remount `/boot` in read-write mode")
+            # remount succeeded, now perform installation
+            try:
+                return fn(self, *args, **kwargs)
+            except Exception as exc:
+                logging.exception("Installation failed.")
+                raise InstallError("Installation failed: " + str(exc))
+            finally:
+                # remounting in ``READ_ONLY`` mode if that's what it was found
+                # in originally, regardless of the result of the installation
+                if mode == READ_ONLY:
+                    remount(self.BOOT, READ_ONLY)
+        return wrapper
 
-        Raises :py:exc:`InstallError` on failure.
+    @install_wrapper
+    def _install(self):
         """
-        if self.is_installed:
-            # overlay is already installed, do nothing
-            return
-        # installation is needed, prepare destination
-        original_mode = self._prepare_dest()
-        # copy overlay into /boot
+        Perform the actual installation.
+        """
         destpath = os.path.join(self.BOOT, self.filename)
+        # check if this overlay has another version of it installed already
         existing = self.find_installed_relative()
         if existing:
             # there is another version of this overlay installed, perform safe
@@ -227,6 +234,13 @@ class Overlay(object):
             shutil.copy2(self.path, destpath)
         # make sure copy operation is finished
         sync()
-        # if mount mode was not in the expected state, return it to original
-        if original_mode == READ_ONLY:
-            remount(self.BOOT, READ_ONLY)
+
+    def install(self):
+        """
+        Install this overlay into :py:attr:`~Overlay.BOOT`.
+
+        Raises :py:exc:`InstallError` on failure.
+        """
+        # proceed only if it's not already installed
+        if not self.is_installed:
+            return self._install()
