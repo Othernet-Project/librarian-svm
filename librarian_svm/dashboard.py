@@ -9,6 +9,8 @@ from bottle_utils.i18n import lazy_gettext as _
 
 from librarian.presentation.dashboard.dashboard import DashboardPlugin
 
+from .svm import Overlay
+
 
 class SVMDashboardPlugin(DashboardPlugin):
     # Translators, used as dashboard section title
@@ -19,4 +21,4 @@ class SVMDashboardPlugin(DashboardPlugin):
         return self.name + '/dashboard.tpl'
 
     def get_context(self):
-        return dict()
+        return dict(manifest=Overlay.manifest())
