@@ -98,9 +98,9 @@ class Overlay(object):
     #: Boot directory path
     BOOT = '/boot'
     #: Glob pattern used to find overlays installed in ``BOOT``
-    GLOB = '/boot/overlay-*.sqfs'
+    GLOB = 'overlay-*.sqfs'
     #: Regex pattern to capture significant portions of an overlay filename
-    REGEX = re.compile('^overlay-([A-Za-z0-9]+)-([0-9][\.0-9a-z]+)\.sqfs$')
+    REGEX = re.compile(r'^overlay-([A-Za-z0-9]+)-([0-9][\.0-9a-z]+)\.sqfs$')
     #: Extension to temporarily append to overlays while being installed
     NEW_EXT = '.new'
     #: Extension to temporarily append to old overlays that are being replaced
@@ -181,15 +181,16 @@ class Overlay(object):
         """
         Yield instances of installed overlays found in :py:attr:`~Overlay.BOOT`
         """
-        return (cls(path) for path in glob.iglob(cls.GLOB))
+        pattern = os.path.join(cls.BOOT, cls.GLOB)
+        return (cls(path) for path in glob.iglob(pattern))
 
     @classmethod
     def stashed(cls):
         """
         Yield instances of available overlays found in 'svm.stashdir'.
         """
-        stashdir = exts.config['svm.stashdir']
-        return (cls(path) for path in glob.iglob(stashdir))
+        pattern = os.path.join(exts.config['svm.stashdir'], cls.GLOB)
+        return (cls(path) for path in glob.iglob(pattern))
 
     @classmethod
     def manifest(cls):
