@@ -40,9 +40,9 @@ class InvalidFilename(ValueError):
     pass
 
 
-class InstallError(RuntimeError):
+class OperationalError(RuntimeError):
     """
-    Raised when overlay installation or uninstallation fails.
+    Raised when overlay write operation fails.
     """
     pass
 
@@ -98,18 +98,18 @@ class Overlay(object):
     """
     #: Boot directory path
     BOOT = '/boot'
-    #: Glob pattern used to find overlays installed in ``BOOT``
+    #: Glob pattern used to find overlays located in ``BOOT``
     GLOB = 'overlay-*.sqfs'
     #: Regex pattern to capture significant portions of an overlay filename
     REGEX = re.compile(r'^overlay-([A-Za-z0-9]+)-([0-9][\.0-9a-z]+)\.sqfs$')
-    #: Extension to temporarily append to overlays while being installed
+    #: Extension to temporarily append to overlays while being enabled
     NEW_EXT = '.new'
     #: Extension to temporarily append to old overlays that are being replaced
     #: with a new one
     BACKUP_EXT = '.backup'
     #: Exception aliases
     InvalidFilename = InvalidFilename
-    InstallError = InstallError
+    OperationalError = OperationalError
 
     def __init__(self, path):
         self.path = path
@@ -178,21 +178,21 @@ class Overlay(object):
         return u"<Overlay: '{path}'>".format(path=self.path)
 
     @property
-    def is_installed(self):
+    def is_enabled(self):
         """
-        Return whether this overlay is installed under :py:attr:`~Overlay.BOOT`
+        Return whether this overlay is located under :py:attr:`~Overlay.BOOT`
         or not.
         """
         if self.path.startswith(self.BOOT):
             return True
         # it's possible this overlay is in stash, but it has a copy in /boot
-        relative = self.find_installed_relative()
+        relative = self.find_enabled_relative()
         return relative == self
 
     @classmethod
-    def installed(cls):
+    def enabled(cls):
         """
-        Yield instances of installed overlays found in :py:attr:`~Overlay.BOOT`
+        Yield instances of enabled overlays found in :py:attr:`~Overlay.BOOT`
         """
         pattern = os.path.join(cls.BOOT, cls.GLOB)
         return (cls(path) for path in glob.iglob(pattern))
@@ -208,100 +208,103 @@ class Overlay(object):
     @classmethod
     def manifest(cls):
         """
-        Return a unified view of all installed and stashed overlays.
+        Return a unified view of all enabled and stashed overlays.
         """
-        installed = cls.installed()
+        enabled = cls.enabled()
         stashed = cls.stashed()
         # prepare a dict of overlay name: list of overlay instances mapping
         manifest = dict((overlay.name, {'versions': [overlay],
-                                        'installed': overlay.version})
-                        for overlay in installed)
+                                        'enabled': overlay.version})
+                        for overlay in enabled)
         # update manifest with other available overlays, extending the list
         # of overlays in case of matching names
         for overlay in stashed:
             family = manifest.get(overlay.name, {'versions': [],
-                                                 'installed': None})
+                                                 'enabled': None})
             if overlay not in family['versions']:
                 family['versions'].append(overlay)
                 family['versions'].sort()
             manifest[overlay.name] = family
         return manifest
 
-    def find_installed_relative(self):
+    def find_enabled_relative(self):
         """
         Find and return an overlay that is equally named as this instance,
-        (ignoring version differences), and is installed under
+        (ignoring version differences), and is located under
         :py:attr:`~Overlay.BOOT`.
         """
-        for overlay in self.installed():
+        for overlay in self.enabled():
             if overlay.name == self.name:
                 return overlay
 
-    def install_wrapper(fn):
+    def remount_boot(fn):
         """
-        Prepare destination for installation, remounting it in read-write mode,
-        and returning it to the original mount mode that it was found in after
-        installation is done.
+        Prepare destination for write operation, remounting it in read-write
+        mode and returning it to the original mount mode that it was found in
+        after the operation is finished.
         """
         @functools.wraps(fn)
         def wrapper(self, *args, **kwargs):
             try:
                 mode = get_mount_mode(self.BOOT)
             except IndeterminableMountMode:
-                logging.error("Unable to determine mount mode of `/boot`")
-                raise InstallError("Unable to determine mount mode of `/boot`")
+                msg = "Unable to determine mount mode of `/boot`"
+                logging.error(msg)
+                raise OperationalError(msg)
             # remount /boot in read-write mode if it's not already in it
             if mode != READ_WRITE and not remount(self.BOOT, READ_WRITE):
-                logging.error("Cannot remount `/boot` in read-write mode")
-                raise InstallError("Cannot remount `/boot` in read-write mode")
-            # remount succeeded, now perform installation
+                msg = "Cannot remount `/boot` in read-write mode"
+                logging.error(msg)
+                raise OperationalError(msg)
+            # remount succeeded, now perform write operation
             try:
                 return fn(self, *args, **kwargs)
             except Exception as exc:
-                logging.exception("Installation failed.")
-                raise InstallError("Installation failed: " + str(exc))
+                logging.exception("Operation failed.")
+                raise OperationalError("Operation failed: " + str(exc))
             finally:
                 # remounting in ``READ_ONLY`` mode if that's what it was found
-                # in originally, regardless of the result of the installation
+                # in originally, regardless of the result of the operation
                 if mode == READ_ONLY:
                     remount(self.BOOT, READ_ONLY)
         return wrapper
 
-    @install_wrapper
-    def _install(self):
+    @remount_boot
+    def _enable(self):
         """
-        Perform the actual installation.
+        Perform the actual enabling.
         """
         destpath = os.path.join(self.BOOT, self.filename)
-        # check if this overlay has another version of it installed already
-        existing = self.find_installed_relative()
+        # check if this overlay has another version of it enabled already
+        existing = self.find_enabled_relative()
         if existing:
-            # there is another version of this overlay installed, perform safe
+            # there is another version of this overlay enabled, perform safe
             # replacement of the other version with this one
             safedestpath = destpath + self.NEW_EXT
             shutil.copy2(self.path, safedestpath)
             shutil.move(existing.path, existing.path + self.BACKUP_EXT)
             shutil.move(safedestpath, destpath)
         else:
-            # no other version of this overlay is installed, do a simple copy
+            # no other version of this overlay is enabled, do a simple copy
             shutil.copy2(self.path, destpath)
         # make sure copy operation is finished
         sync()
 
-    def install(self):
+    def enable(self):
         """
-        Install this overlay into :py:attr:`~Overlay.BOOT`.
+        Enable this overlay by moving it from 'svm.stashdir' into
+        :py:attr:`~Overlay.BOOT`.
 
-        Raises :py:exc:`InstallError` on failure.
+        Raises :py:exc:`OperationalError` on failure.
         """
-        # proceed only if it's not already installed
-        if not self.is_installed:
-            return self._install()
+        # proceed only if it's not already enabled
+        if not self.is_enabled:
+            return self._enable()
 
-    @install_wrapper
-    def _uninstall(self):
+    @remount_boot
+    def _disable(self):
         """
-        Perform the actual uninstallation.
+        Perform the actual disabling.
         """
         stashdir = exts.config['svm.stashdir']
         if not os.path.exists(stashdir):
@@ -313,22 +316,23 @@ class Overlay(object):
         # make sure the write operation is finished
         sync()
 
-    def uninstall(self):
+    def disable(self):
         """
-        Uninstall this overlay from :py:attr:`~Overlay.BOOT`.
+        Disable overlay by moving it from :py:attr:`~Overlay.BOOT` back to
+        'svm.stashdir'.
 
-        Raises :py:exc:`InstallError` on failure.
+        Raises :py:exc:`OperationalError` on failure.
         """
-        # proceed only if it's really installed
-        if self.is_installed:
-            return self._uninstall()
+        # proceed only if it's really enabled
+        if self.is_enabled:
+            return self._disable()
 
     def remove(self):
         """
-        Remove overlay image from 'svm.stashdir' and also uninstall it if it
-        was installed.
+        Remove overlay image from 'svm.stashdir' and also disable it if it was
+        enabled.
         """
-        self.uninstall()
+        self.disable()
         # remove from stash if it exists
         stashpath = os.path.join(exts.config['svm.stashdir'], self.filename)
         if os.path.exists(stashpath):

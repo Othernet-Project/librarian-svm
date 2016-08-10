@@ -19,7 +19,7 @@
     % endif
 
     % if not manifest:
-    ## Translators, message is displayed when no overlays are installed or stashed
+    ## Translators, message is displayed when no overlays are enabled or stashed
     <p class="no-overlays">${_("No overlays detected on this system.")}</p>
     % else:
     <table class="overlays">
@@ -33,17 +33,17 @@
                             ## Translators, placeholder for overlay version selection select list
                             <option value="">${_('Select a version')}</option>
                             % for overlay in family['versions']:
-                            <option value="${overlay.path}"${ 'selected' if overlay.version == family['installed'] else ''}>${overlay.version}</option>
+                            <option value="${overlay.path}"${ 'selected' if overlay.version == family['enabled'] else ''}>${overlay.version}</option>
                             % endfor
                         </select>
                     </span>
                     <span class="unit">
-                        % if family['installed']:
-                        ## Translators, button title to perform uninstallation of an overlay
-                        <button type="submit" name="action" value="${form.UNINSTALL_OPERATION}">${_('Uninstall')}</button>
+                        % if family['enabled']:
+                        ## Translators, button title to perform disabling of an overlay
+                        <button type="submit" name="action" value="${form.DISABLE_OPERATION}">${_('Disable')}</button>
                         % else:
-                        ## Translators, button title to perform installation of an overlay
-                        <button type="submit" name="action" value="${form.INSTALL_OPERATION}">${_('Install')}</button>
+                        ## Translators, button title to perform enabling of an overlay
+                        <button type="submit" name="action" value="${form.ENABLE_OPERATION}">${_('Enable')}</button>
                         % endif
                         ## Translators, button title to perform removal of an overlay
                         <button type="submit" name="action" value="${form.REMOVE_OPERATION}">${_('Remove')}</button>

@@ -18,13 +18,13 @@ from .svm import Overlay
 
 
 class OverlayForm(form.Form):
-    INSTALL_OPERATION = 'install'
-    UNINSTALL_OPERATION = 'uninstall'
+    ENABLE_OPERATION = 'enable'
+    DISABLE_OPERATION = 'disable'
     REMOVE_OPERATION = 'remove'
     UPLOAD_OPERATION = 'upload'
     ACTIONS = (
-        (INSTALL_OPERATION, _("Install")),
-        (UNINSTALL_OPERATION, _("Uninstall")),
+        (ENABLE_OPERATION, _("Enable")),
+        (DISABLE_OPERATION, _("Disable")),
         (REMOVE_OPERATION, _("Remove")),
         (UPLOAD_OPERATION, _("Upload")),
     )
@@ -94,7 +94,7 @@ class OverlayForm(form.Form):
 
     def _process_action(self):
         """
-        Perform install / uninstall / removal of an existing overlay.
+        Perform enable / disable / removal of an existing overlay.
         """
         overlay = self.processed_data['overlay']
         if not overlay:
@@ -103,5 +103,5 @@ class OverlayForm(form.Form):
         method = getattr(overlay, self.processed_data['action'])
         try:
             method()
-        except Overlay.InstallError as exc:
+        except Overlay.OperationalError as exc:
             raise form.ValidationError('operation_failed', {'error': exc})
