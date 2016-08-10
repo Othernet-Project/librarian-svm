@@ -7,6 +7,11 @@
 % if form.error:
     ${forms.form_errors([form.error])}
 % endif
+% if form.action.error:
+    ## Translators, message displayed when action attributes have been
+    ## tempered with manually
+    ${forms.form_errors([_("Form submission error")])}
+% endif
 
 % if not manifest:
 ## Translators, message is displayed when no overlays are installed or stashed
@@ -29,13 +34,13 @@
             % endif
             % if family['installed']:
             ## Translators, button title to perform uninstallation of an overlay
-            <button type="submit" name="action" value="uninstall">${_('Uninstall')}</button>
+            <button type="submit" name="action" value="${form.UNINSTALL_OPERATION}">${_('Uninstall')}</button>
             % else:
             ## Translators, button title to perform installation of an overlay
-            <button type="submit" name="action" value="install">${_('Install')}</button>
+            <button type="submit" name="action" value="${form.INSTALL_OPERATION}">${_('Install')}</button>
             % endif
             ## Translators, button title to perform removal of an overlay
-            <button type="submit" name="action" value="remove">${_('Remove')}</button>
+            <button type="submit" name="action" value="${form.REMOVE_OPERATION}">${_('Remove')}</button>
             % if form.action.error:
             ${forms.field_error(form.action.error)}
             % endif
@@ -44,3 +49,10 @@
     % endfor
 </ol>
 % endif
+
+<form action="${i18n_url('svm:manage')}" method="POST" enctype="multipart/form-data">
+    ${forms.field(form.image)}
+    ## Translators, button title to perform upload of a new overlay
+    <button type="submit" name="action" value="${form.UPLOAD_OPERATION}">${_('Upload')}</button>
+</form>
+

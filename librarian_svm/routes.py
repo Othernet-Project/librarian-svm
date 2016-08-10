@@ -22,13 +22,20 @@ class SVMRoute(XHRPartialFormRoute):
     partial_template_name = 'svm/_svm_form'
     form_factory = OverlayForm
 
+    def get_bound_form(self):
+        form_factory = self.get_form_factory()
+        return form_factory(self.request.POST)
+
     def get_context(self):
         context = super(SVMRoute, self).get_context()
         context.update(manifest=Overlay.manifest())
         return context
 
     def form_valid(self):
-        # Translators, message displayed when overlay operation is successful
+        if self.form.processed_data['action'] == self.form.UPLOAD_OPERATION:
+            # Translators, message displayed when overlay upload was successful
+            return dict(message=_("Overlay successfully uploaded."))
+        # Translators, message displayed when overlay operation was successful
         return dict(message=_("Overlay operation successfully completed. "
                               "Please restart the device for the changes "
                               "to take effect."))
