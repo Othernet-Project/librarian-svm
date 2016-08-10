@@ -8,3 +8,7 @@ ${_('Software Version Management')}
 <h2>${_('Software Version Management')}</h2>
 
 ${svm_form.body()}
+
+<%block name="extra_head">
+    <link rel="stylesheet" href="${assets['css/svm']}">
+</%block>
