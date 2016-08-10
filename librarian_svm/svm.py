@@ -42,8 +42,9 @@ class InvalidFilename(ValueError):
 
 class InstallError(RuntimeError):
     """
-    Raised when overlay installation fails.
+    Raised when overlay installation or uninstallation fails.
     """
+    pass
 
 
 def get_mount_mode(path):
@@ -169,7 +170,11 @@ class Overlay(object):
         Return whether this overlay is installed under :py:attr:`~Overlay.BOOT`
         or not.
         """
-        return self.path.startswith(self.BOOT)
+        if self.path.startswith(self.BOOT):
+            return True
+        # it's possible this overlay is in stash, but it has a copy in /boot
+        relative = self.find_installed_relative()
+        return relative == self
 
     @classmethod
     def installed(cls):
@@ -256,3 +261,34 @@ class Overlay(object):
         # proceed only if it's not already installed
         if not self.is_installed:
             return self._install()
+
+    @install_wrapper
+    def _uninstall(self):
+        """
+        Perform the actual uninstallation.
+        """
+        destpath = os.path.join(self.BOOT, self.filename)
+        os.remove(destpath)
+        # make sure the write operation is finished
+        sync()
+
+    def uninstall(self):
+        """
+        Uninstall this overlay from :py:attr:`~Overlay.BOOT`.
+
+        Raises :py:exc:`InstallError` on failure.
+        """
+        # proceed only if it's really installed
+        if self.is_installed:
+            return self._uninstall()
+
+    def remove(self):
+        """
+        Remove overlay image from 'svm.stashdir' and also uninstall it if it
+        was installed.
+        """
+        self.uninstall()
+        # remove from stash if it exists
+        stashpath = os.path.join(exts.config['svm.stashdir'], self.filename)
+        if os.path.exists(stashpath):
+            os.remove(stashpath)
