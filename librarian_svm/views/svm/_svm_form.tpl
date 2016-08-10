@@ -13,6 +13,10 @@
         ## tempered with manually
         ${forms.form_errors([_("Form submission error")])}
     % endif
+    % if form.overlay.error:
+        ## Translators, message displayed when no valid overlay has been selected
+        ${forms.form_errors([_("No valid overlay selected")])}
+    % endif
 
     % if not manifest:
     ## Translators, message is displayed when no overlays are installed or stashed
@@ -20,40 +24,33 @@
     % else:
     <table class="overlays">
         % for overlay_name, family in manifest.items():
-        <tr>
-            <td>
-                <form class="overlay-instance" action="${i18n_url('svm:manage')}" method="POST">
-                    <table>
-                        <tr>
-                            <td class="overlay-name">${overlay_name}</td>
-                            <td class="overlay-version">
-                                <select name="overlay">
-                                    ## Translators, placeholder for overlay version selection select list
-                                    <option value="">${_('Select a version')}</option>
-                                    % for overlay in family['versions']:
-                                    <option value="${overlay.path}"${ 'selected' if overlay.version == family['installed'] else ''}>${overlay.version}</option>
-                                    % endfor
-                                </select>
-                                % if form.overlay.error:
-                                ${forms.field_error(form.overlay.error)}
-                                % endif
-                            </td>
-                            <td class="actions">
-                                % if family['installed']:
-                                ## Translators, button title to perform uninstallation of an overlay
-                                <button type="submit" name="action" value="${form.UNINSTALL_OPERATION}">${_('Uninstall')}</button>
-                                % else:
-                                ## Translators, button title to perform installation of an overlay
-                                <button type="submit" name="action" value="${form.INSTALL_OPERATION}">${_('Install')}</button>
-                                % endif
-                                ## Translators, button title to perform removal of an overlay
-                                <button type="submit" name="action" value="${form.REMOVE_OPERATION}">${_('Remove')}</button>
-                                % if form.action.error:
-                                ${forms.field_error(form.action.error)}
-                                % endif
-                            </td>
-                        </tr>
-                    </table>
+        <tr class="overlay-instance">
+            <td class="overlay-name">${overlay_name}</td>
+            <td class="overlay-version">
+                <form action="${i18n_url('svm:manage')}" method="POST">
+                    <span class="unit">
+                        <select name="overlay">
+                            ## Translators, placeholder for overlay version selection select list
+                            <option value="">${_('Select a version')}</option>
+                            % for overlay in family['versions']:
+                            <option value="${overlay.path}"${ 'selected' if overlay.version == family['installed'] else ''}>${overlay.version}</option>
+                            % endfor
+                        </select>
+                    </span>
+                    <span class="unit">
+                        % if family['installed']:
+                        ## Translators, button title to perform uninstallation of an overlay
+                        <button type="submit" name="action" value="${form.UNINSTALL_OPERATION}">${_('Uninstall')}</button>
+                        % else:
+                        ## Translators, button title to perform installation of an overlay
+                        <button type="submit" name="action" value="${form.INSTALL_OPERATION}">${_('Install')}</button>
+                        % endif
+                        ## Translators, button title to perform removal of an overlay
+                        <button type="submit" name="action" value="${form.REMOVE_OPERATION}">${_('Remove')}</button>
+                        % if form.action.error:
+                        ${forms.field_error(form.action.error)}
+                        % endif
+                    </span>
                 </form>
             </td>
         </tr>

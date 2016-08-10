@@ -2,3 +2,7 @@
 .svm table.overlays td {
   padding: 0.5rem;
 }
+/* line 7, ../../../src/scss/svm.scss */
+.svm table.overlays form .unit {
+  display: inline-block;
+}
