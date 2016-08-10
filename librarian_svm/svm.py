@@ -67,7 +67,8 @@ def remount(path, mode):
 
     On success it returns ``True``, otherwise ``False``.
     """
-    cmd = [MOUNT, '-o', 'remount', mode, path]
+    options = 'remount,{mode}'.format(mode=mode)
+    cmd = [MOUNT, '-o', options, mode, path]
     try:
         subprocess.check_call(cmd)
     except subprocess.CalledProcessError:
