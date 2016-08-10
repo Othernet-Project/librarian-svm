@@ -151,6 +151,18 @@ class Overlay(object):
         """
         return self.name == other.name and self.version > other.version
 
+    def __str__(self):
+        """
+        Return human readable string representation of overlay object.
+        """
+        return self.path
+
+    def __repr__(self):
+        """
+        Return string representation of overlay object.
+        """
+        return u"<Overlay: '{path}'>".format(path=self.path)
+
     @property
     def is_installed(self):
         """
