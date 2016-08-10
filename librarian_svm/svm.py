@@ -130,6 +130,10 @@ class Overlay(object):
         """
         Defines whether two overlay objects are equal.
         """
+        if not other or not isinstance(other, Overlay):
+            # guard against `None` or non-overlay types
+            return False
+        # safe to assume that ``other`` is an instance of ``Overlay``
         return self.name == other.name and self.version == other.version
 
     def __ne__(self, other):
@@ -143,6 +147,10 @@ class Overlay(object):
         Determine whether this overlay has the same name as ``other``, only
         it's version number is less than ``other``'s or not.
         """
+        if not other or not isinstance(other, Overlay):
+            # guard against `None` or non-overlay types
+            return False
+        # safe to assume that ``other`` is an instance of ``Overlay``
         return self.name == other.name and self.version < other.version
 
     def __gt__(self, other):
@@ -150,6 +158,10 @@ class Overlay(object):
         Determine whether this overlay has the same name as ``other``, only
         it's version number is greater than ``other``'s or not.
         """
+        if not other or not isinstance(other, Overlay):
+            # guard against `None` or non-overlay types
+            return False
+        # safe to assume that ``other`` is an instance of ``Overlay``
         return self.name == other.name and self.version > other.version
 
     def __str__(self):
