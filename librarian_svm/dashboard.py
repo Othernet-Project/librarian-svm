@@ -9,6 +9,7 @@ from bottle_utils.i18n import lazy_gettext as _
 
 from librarian.presentation.dashboard.dashboard import DashboardPlugin
 
+from .forms import OverlayForm
 from .svm import Overlay
 
 
@@ -21,4 +22,5 @@ class SVMDashboardPlugin(DashboardPlugin):
         return self.name + '/dashboard.tpl'
 
     def get_context(self):
-        return dict(manifest=Overlay.manifest())
+        return dict(form=OverlayForm(),
+                    manifest=Overlay.manifest())
