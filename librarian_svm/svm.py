@@ -290,8 +290,13 @@ class Overlay(object):
         """
         Perform the actual uninstallation.
         """
-        destpath = os.path.join(self.BOOT, self.filename)
-        os.remove(destpath)
+        stashdir = exts.config['svm.stashdir']
+        if not os.path.exists(stashdir):
+            os.makedirs(stashdir)
+        # move overlay image from boot into stashdir
+        src = os.path.join(self.BOOT, self.filename)
+        dest = os.path.join(stashdir, self.filename)
+        shutil.move(src, dest)
         # make sure the write operation is finished
         sync()
 
