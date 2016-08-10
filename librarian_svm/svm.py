@@ -69,7 +69,7 @@ def remount(path, mode):
     """
     cmd = [MOUNT, '-o', 'remount', mode, path]
     try:
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd)
     except subprocess.CalledProcessError:
         logging.exception(u"SVM: '%s' remount failed.", path)
         return False
