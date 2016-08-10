@@ -31,7 +31,7 @@
                                     ## Translators, placeholder for overlay version selection select list
                                     <option value="">${_('Select a version')}</option>
                                     % for overlay in family['versions']:
-                                    <option value="overlay.path"${ 'selected' if overlay.version == family['installed'] else ''}>${overlay.version}</option>
+                                    <option value="${overlay.path}"${ 'selected' if overlay.version == family['installed'] else ''}>${overlay.version}</option>
                                     % endfor
                                 </select>
                                 % if form.overlay.error:
