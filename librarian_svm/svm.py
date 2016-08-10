@@ -191,6 +191,28 @@ class Overlay(object):
         stashdir = exts.config['svm.stashdir']
         return (cls(path) for path in glob.iglob(stashdir))
 
+    @classmethod
+    def manifest(cls):
+        """
+        Return a unified view of all installed and stashed overlays.
+        """
+        installed = cls.installed()
+        stashed = cls.stashed()
+        # prepare a dict of overlay name: list of overlay instances mapping
+        manifest = dict((overlay.name, {'versions': [overlay],
+                                        'installed': overlay.version})
+                        for overlay in installed)
+        # update manifest with other available overlays, extending the list
+        # of overlays in case of matching names
+        for overlay in stashed:
+            family = manifest.get(overlay.name, {'versions': [],
+                                                 'installed': None})
+            if overlay not in family['versions']:
+                family['versions'].append(overlay)
+                family['versions'].sort()
+            manifest[overlay.name] = family
+        return manifest
+
     def find_installed_relative(self):
         """
         Find and return an overlay that is equally named as this instance,
