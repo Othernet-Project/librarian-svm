@@ -53,9 +53,10 @@
     }
     return results;
   };
-  appendActionValue = function(form) {
-    var action, button;
-    button = form.find('button');
+  appendActionValue = function(e) {
+    var action, button, form;
+    button = $(this);
+    form = button.closest('form');
     action = $('<input>', {
       type: 'hidden',
       name: 'action',
@@ -64,11 +65,13 @@
     return form.append(action);
   };
   patchUploadForm = function() {
+    var button;
     iframe = container.find('iframe');
     uploadForm = container.find(uploadFormId);
     uploadForm.on('submit', uploadStart);
     uploadForm.prop('target', iframe.prop('name'));
-    return appendActionValue(uploadForm);
+    button = uploadForm.find('button');
+    return button.on('click', appendActionValue);
   };
   addButton = function(form, action) {
     var button, buttonContainer;
@@ -79,7 +82,8 @@
       value: action
     });
     button.text(actionMap[action]);
-    return buttonContainer.append(button);
+    buttonContainer.append(button);
+    return button.on('click', appendActionValue);
   };
   changeVersion = function() {
     var form, initial, option, select, selected;
@@ -101,7 +105,6 @@
     var form, res, url;
     e.preventDefault();
     form = $(this);
-    appendActionValue(form);
     url = form.attr('action');
     res = $.post(url, form.serialize());
     res.done(function(data) {
@@ -112,13 +115,15 @@
     });
   };
   prepareActionHandlers = function() {
-    var forms, selects;
+    var buttons, forms, selects;
     actionMap = JSON.parse($(actionMapSelector).html());
     forms = container.find(actionFormSelector);
     forms.on('submit', submitAction);
     selects = forms.find('select');
     selects.on('change', changeVersion);
-    return selects.each(changeVersion);
+    selects.each(changeVersion);
+    buttons = forms.find('button');
+    return buttons.on('click', appendActionValue);
   };
   initPlugin = function(e) {
     loadMessages();

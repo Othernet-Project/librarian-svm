@@ -49,9 +49,10 @@
         messages[msgId] = templates[msgId]
 
 
-  appendActionValue = (form) ->
+  appendActionValue = (e) ->
     # JS intercepted form submissions do not carry over the button value
-    button = form.find 'button'
+    button = $ @
+    form = button.closest 'form'
     action = $ '<input>', {
       type: 'hidden',
       name: 'action',
@@ -65,7 +66,8 @@
     uploadForm = container.find uploadFormId
     uploadForm.on 'submit', uploadStart
     uploadForm.prop 'target', (iframe.prop 'name')
-    appendActionValue uploadForm
+    button = uploadForm.find 'button'
+    button.on 'click', appendActionValue
 
 
   addButton = (form, action) ->
@@ -77,6 +79,7 @@
     }
     button.text actionMap[action]
     buttonContainer.append button
+    button.on 'click', appendActionValue
 
 
   changeVersion = () ->
@@ -103,7 +106,6 @@
   submitAction = (e) ->
     e.preventDefault()
     form = $ @
-    appendActionValue form
     url = form.attr 'action'
     res = $.post url, form.serialize()
     res.done (data) ->
@@ -120,6 +122,8 @@
     selects = forms.find 'select'
     selects.on 'change', changeVersion
     selects.each changeVersion
+    buttons = forms.find 'button'
+    buttons.on 'click', appendActionValue
 
 
   initPlugin = (e) ->
