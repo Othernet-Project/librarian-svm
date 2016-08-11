@@ -85,6 +85,9 @@ class OverlayForm(form.Form):
         image = self.processed_data['image']
         if not image:
             raise form.ValidationError('image_required', {})
+        # validate image filename
+        if not Overlay.is_valid(image.filename):
+            raise form.ValidationError('invalid_overlay', {})
         # attempt saving overlay image
         try:
             self._save_image(image)
