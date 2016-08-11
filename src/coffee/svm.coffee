@@ -1,14 +1,16 @@
 ((window, $, templates) ->
   partialSelector = ".svm"
-  formId = "#overlay-upload"
+  actionFormSelector = ".overlay-version form"
+  uploadFormId = "#overlay-upload"
+
   container = $ "#dashboard-svm-panel"
   section = container.parents '.o-collapsible-section'
   messages = {
     'uploading': null,
   }
-  form = null
   iframe = null
-  button = null
+  uploadForm = null
+  uploadButton = null
 
 
   setMessage = (msg) ->
@@ -19,7 +21,7 @@
 
   uploadStart = (e) ->
     iframe.on 'load', uploadDone
-    button.prop 'disabled', true
+    uploadButton.prop 'disabled', true
     setMessage messages.uploading
     return
 
@@ -38,12 +40,8 @@
         messages[msgId] = templates[msgId]
 
 
-  initPlugin = (e) ->
-    loadMessages()
-    iframe = container.find 'iframe'
-    form = container.find formId
-    form.on 'submit', uploadStart
-    form.prop 'target', (iframe.prop 'name')
+  appendActionValue = (form) ->
+    # JS intercepted form submissions do not carry over the button value
     button = form.find 'button'
     action = $ '<input>', {
       type: 'hidden',
@@ -51,6 +49,39 @@
       value: button.attr 'value'
     }
     form.append action
+
+
+  patchUploadForm = () ->
+    iframe = container.find 'iframe'
+    uploadForm = container.find uploadFormId
+    uploadForm.on 'submit', uploadStart
+    uploadForm.prop 'target', (iframe.prop 'name')
+    appendActionValue uploadForm
+
+
+  submitAction = (e) ->
+    e.preventDefault()
+    form = $ @
+    appendActionValue form
+    url = form.attr 'action'
+    res = $.post url, form.serialize()
+    res.done (data) ->
+      container.html data
+      initPlugin()
+    res.fail () ->
+      setMessage templates.dashboardPluginError 
+      return
+
+
+  initPlugin = (e) ->
+    # capture dynamically loaded templates
+    loadMessages()
+    # patch upload form to submit through iframe
+    patchUploadForm()
+    # handle overlay actions with ajax
+    forms = container.find actionFormSelector
+    forms.on 'submit', submitAction
+
 
   section.on 'dashboard-plugin-loaded', initPlugin
 
