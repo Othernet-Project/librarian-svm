@@ -1,36 +1,45 @@
 ((window, $, templates) ->
   partialSelector = ".svm"
   actionFormSelector = ".overlay-version form"
+  actionMapSelector = "#svm-action-map"
   uploadFormId = "#overlay-upload"
 
   container = $ "#dashboard-svm-panel"
   section = container.parents '.o-collapsible-section'
+  actionMap = {}
   messages = {
     'uploading': null,
   }
   iframe = null
   uploadForm = null
-  uploadButton = null
 
 
   setMessage = (msg) ->
     container.find('.messages').remove()
-    container.prepend msg
+    if msg
+      container.prepend msg
+    section.trigger 'remax'
+
+
+  replacePartial = (data) ->
+    partial = container.find partialSelector
+    partial.replaceWith data
+    initPlugin()
     section.trigger 'remax'
 
 
   uploadStart = (e) ->
     iframe.on 'load', uploadDone
-    uploadButton.prop 'disabled', true
+    button = uploadForm.find 'button'
+    button.prop 'disabled', true
     setMessage messages.uploading
     return
 
 
   uploadDone = (e) ->
+    setMessage null
     partial = iframe.contents().find partialSelector
-    container.html partial
-    section.trigger 'remax'
-    initPlugin()
+    replacePartial partial
 
 
   loadMessages = () ->
@@ -59,6 +68,37 @@
     appendActionValue uploadForm
 
 
+  addButton = (form, action) ->
+    buttonContainer = form.find '.actions'
+    button = $ '<button>', {
+      type: 'submit',
+      name: 'action',
+      value: action,
+    }
+    button.text actionMap[action]
+    buttonContainer.append button
+
+
+  changeVersion = () ->
+    select = $ @
+    form = select.closest 'form'
+    form.find('button').remove()
+    defaultValue = select.data 'default'
+    value = select.val()
+    if value == defaultValue
+      # selected version is the same one as the currently active
+      # allow 'disable' and 'remove' options
+      addButton form, 'disable'
+      addButton form, 'remove'
+    else if value
+      # a valid version is selected that's not currently active
+      # allow 'enable' and 'remove' options
+      addButton form, 'enable'
+      addButton form, 'remove'
+    # when no version is selected, no actions are allowed at all
+    return
+
+
   submitAction = (e) ->
     e.preventDefault()
     form = $ @
@@ -66,11 +106,19 @@
     url = form.attr 'action'
     res = $.post url, form.serialize()
     res.done (data) ->
-      container.html data
-      initPlugin()
+      replacePartial data
     res.fail () ->
       setMessage templates.dashboardPluginError 
       return
+
+
+  prepareActionHandlers = () ->
+    actionMap = JSON.parse $(actionMapSelector).html()
+    forms = container.find actionFormSelector
+    forms.on 'submit', submitAction
+    selects = forms.find 'select'
+    selects.on 'change', changeVersion
+    selects.each changeVersion
 
 
   initPlugin = (e) ->
@@ -79,8 +127,7 @@
     # patch upload form to submit through iframe
     patchUploadForm()
     # handle overlay actions with ajax
-    forms = container.find actionFormSelector
-    forms.on 'submit', submitAction
+    prepareActionHandlers()
 
 
   section.on 'dashboard-plugin-loaded', initPlugin

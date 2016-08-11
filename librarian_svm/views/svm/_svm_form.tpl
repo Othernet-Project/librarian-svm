@@ -29,7 +29,7 @@
             <td class="overlay-version">
                 <form action="${i18n_url('svm:manage')}" method="POST">
                     <span class="unit">
-                        <select name="overlay">
+                        <select name="overlay" data-default="${family['enabled']}">
                             ## Translators, placeholder for overlay version selection select list
                             <option value="">${_('Select a version')}</option>
                             % for overlay in family['versions']:
@@ -37,7 +37,7 @@
                             % endfor
                         </select>
                     </span>
-                    <span class="unit">
+                    <span class="unit actions">
                         % if family['enabled']:
                         ## Translators, button title to perform disabling of an overlay
                         <button type="submit" name="action" value="${form.DISABLE_OPERATION}">${_('Disable')}</button>

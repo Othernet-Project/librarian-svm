@@ -6,10 +6,12 @@ This software is free software licensed under the terms of GPLv3. See COPYING
 file that comes with the source code, or http://www.gnu.org/licenses/gpl.txt.
 """
 
+import json
 import logging
 import os
 
 from bottle_utils import form
+from bottle_utils.common import to_bytes
 from bottle_utils.i18n import lazy_gettext as _
 
 from librarian.core.exts import ext_container as exts
@@ -108,3 +110,11 @@ class OverlayForm(form.Form):
             method()
         except Overlay.OperationalError as exc:
             raise form.ValidationError('operation_failed', {'error': exc})
+
+    @classmethod
+    def action_map(cls):
+        """
+        Return JSON serialized form of :py:attr:`~OverlayForm.ACTIONS`
+        """
+        actions = dict((k, to_bytes(v)) for (k, v) in cls.ACTIONS)
+        return json.dumps(actions)
