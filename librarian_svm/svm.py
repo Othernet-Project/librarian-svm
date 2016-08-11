@@ -190,7 +190,7 @@ class Overlay(object):
         return relative == self
 
     @classmethod
-    def enabled(cls):
+    def iter_enabled(cls):
         """
         Yield instances of enabled overlays found in :py:attr:`~Overlay.BOOT`
         """
@@ -198,7 +198,7 @@ class Overlay(object):
         return (cls(path) for path in glob.iglob(pattern))
 
     @classmethod
-    def stashed(cls):
+    def iter_stashed(cls):
         """
         Yield instances of available overlays found in 'svm.stashdir'.
         """
@@ -210,15 +210,13 @@ class Overlay(object):
         """
         Return a unified view of all enabled and stashed overlays.
         """
-        enabled = cls.enabled()
-        stashed = cls.stashed()
         # prepare a dict of overlay name: list of overlay instances mapping
         manifest = dict((overlay.name, {'versions': [overlay],
                                         'enabled': overlay.version})
-                        for overlay in enabled)
+                        for overlay in cls.iter_enabled())
         # update manifest with other available overlays, extending the list
         # of overlays in case of matching names
-        for overlay in stashed:
+        for overlay in cls.iter_stashed():
             family = manifest.get(overlay.name, {'versions': [],
                                                  'enabled': None})
             if overlay not in family['versions']:
@@ -233,7 +231,7 @@ class Overlay(object):
         (ignoring version differences), and is located under
         :py:attr:`~Overlay.BOOT`.
         """
-        for overlay in self.enabled():
+        for overlay in self.iter_enabled():
             if overlay.name == self.name:
                 return overlay
 
