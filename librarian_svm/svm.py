@@ -190,12 +190,27 @@ class Overlay(object):
         return relative == self
 
     @classmethod
+    def is_valid(cls, path):
+        """
+        Return whether passed in path has a valid overlay filename or not.
+        """
+        return bool(cls.REGEX.match(os.path.basename(path)))
+
+    @classmethod
+    def iter_matches(cls, pattern):
+        """
+        Yield valid overlay instances matching the passed in glob ``pattern``.
+        """
+        return (cls(path) for path in glob.iglob(pattern)
+                if cls.is_valid(path))
+
+    @classmethod
     def iter_enabled(cls):
         """
         Yield instances of enabled overlays found in :py:attr:`~Overlay.BOOT`
         """
         pattern = os.path.join(cls.BOOT, cls.GLOB)
-        return (cls(path) for path in glob.iglob(pattern))
+        return cls.iter_matches(pattern)
 
     @classmethod
     def iter_stashed(cls):
@@ -203,7 +218,7 @@ class Overlay(object):
         Yield instances of available overlays found in 'svm.stashdir'.
         """
         pattern = os.path.join(exts.config['svm.stashdir'], cls.GLOB)
-        return (cls(path) for path in glob.iglob(pattern))
+        return cls.iter_matches(pattern)
 
     @classmethod
     def manifest(cls):
