@@ -81,16 +81,17 @@
 
   changeVersion = () ->
     select = $ @
+    option = select.find 'option:selected'
     form = select.closest 'form'
     form.find('button').remove()
-    defaultValue = select.data 'default'
-    value = select.val()
-    if value == defaultValue
+    initial = select.data 'initial'
+    selected = option.data 'version'
+    if selected == initial
       # selected version is the same one as the currently active
       # allow 'disable' and 'remove' options
       addButton form, 'disable'
       addButton form, 'remove'
-    else if value
+    else if selected
       # a valid version is selected that's not currently active
       # allow 'enable' and 'remove' options
       addButton form, 'enable'

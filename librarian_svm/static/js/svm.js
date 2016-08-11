@@ -82,16 +82,17 @@
     return buttonContainer.append(button);
   };
   changeVersion = function() {
-    var defaultValue, form, select, value;
+    var form, initial, option, select, selected;
     select = $(this);
+    option = select.find('option:selected');
     form = select.closest('form');
     form.find('button').remove();
-    defaultValue = select.data('default');
-    value = select.val();
-    if (value === defaultValue) {
+    initial = select.data('initial');
+    selected = option.data('version');
+    if (selected === initial) {
       addButton(form, 'disable');
       addButton(form, 'remove');
-    } else if (value) {
+    } else if (selected) {
       addButton(form, 'enable');
       addButton(form, 'remove');
     }

@@ -29,11 +29,11 @@
             <td class="overlay-version">
                 <form action="${i18n_url('svm:manage')}" method="POST">
                     <span class="unit">
-                        <select name="overlay" data-default="${family['enabled']}">
+                        <select name="overlay" data-initial="${family['enabled']}">
                             ## Translators, placeholder for overlay version selection select list
                             <option value="">${_('Select a version')}</option>
                             % for overlay in family['versions']:
-                            <option value="${overlay.path}"${ 'selected' if overlay.version == family['enabled'] else ''}>${overlay.version}</option>
+                            <option value="${overlay.path}"${ 'selected' if overlay.version == family['enabled'] else ''} data-name="${overlay.name}" data-version="${overlay.version}">${overlay.version}</option>
                             % endfor
                         </select>
                     </span>
