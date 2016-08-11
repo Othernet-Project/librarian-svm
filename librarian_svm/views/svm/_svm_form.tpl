@@ -47,9 +47,6 @@
                         % endif
                         ## Translators, button title to perform removal of an overlay
                         <button type="submit" name="action" value="${form.REMOVE_OPERATION}">${_('Remove')}</button>
-                        % if form.action.error:
-                        ${forms.field_error(form.action.error)}
-                        % endif
                     </span>
                 </form>
             </td>
@@ -58,7 +55,8 @@
     </table>
     % endif
 
-    <form action="${i18n_url('svm:manage')}" method="POST" enctype="multipart/form-data">
+    <iframe name="overlay-upload" height="0" width="0" frameborder="0"></iframe>
+    <form id="overlay-upload" action="${i18n_url('svm:manage')}" method="POST" enctype="multipart/form-data">
         ${forms.field(form.image)}
         ## Translators, button title to perform upload of a new overlay
         <button type="submit" name="action" value="${form.UPLOAD_OPERATION}">${_('Upload')}</button>
